@@ -380,7 +380,7 @@ console.log(historyData)
     const status = (item.paymentStatus || item.payment || item.payStatus || 'Pending').toString().trim();
     return (
       <div className={status === 'Updated' ? 'badge-paid' : 'badge-pending'}>
-        {status}
+        Payment Status: {status}
       </div>
     );
   };
@@ -467,11 +467,11 @@ console.log(historyData)
         </div>
 
         {/* Status Breakdown Sections */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
           {/* Evaluation Entry Status */}
           <div className="card-pro p-6">
             <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-              <Edit3 className="w-5 h-5 text-brand" /> Evaluation Entry Status
+              <Edit3 className="w-5 h-5 text-brand" /> Marks Entry Status
             </h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 rounded-2xl bg-warning/5 border border-warning/10">
@@ -490,21 +490,7 @@ console.log(historyData)
           </div>
 
           {/* Payment Entry Status */}
-          <div className="card-pro p-6">
-            <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-success" /> Payment Entry Status
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 rounded-2xl bg-warning/5 border border-warning/10">
-                <div className="text-2xl font-bold text-warning">{dashboardStats.pendingPayments}</div>
-                <div className="text-xs text-muted font-bold uppercase mt-1">Pending</div>
-              </div>
-              <div className="text-center p-4 rounded-2xl bg-success/5 border border-success/10">
-                <div className="text-2xl font-bold text-success">{dashboardStats.updatedPayments}</div>
-                <div className="text-xs text-muted font-bold uppercase mt-1">Updated</div>
-              </div>
-            </div>
-          </div>
+      
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -560,34 +546,7 @@ console.log(historyData)
           </div>
         </div>
 
-        <div className="card-pro p-6 mt-2">
-          <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-success" /> Payment Status Breakdown
-          </h3>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: 'Updated', value: dashboardStats.updatedPayments },
-                    { name: 'Pending', value: dashboardStats.pendingPayments }
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  <Cell fill="#10b981" />
-                  <Cell fill="#f59e0b" />
-                </Pie>
-                <Tooltip />
-                <Legend verticalAlign="bottom" height={36}/>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      
 
         <div className="card-pro p-6">
           <div className="flex items-center justify-between mb-6">
@@ -609,8 +568,11 @@ console.log(historyData)
                   </div>
                 </div>
                 <div className="text-right">
+                 
                   <div className="text-sm font-bold">{Number(item.bvCount) + Number(item.evCount)} Scripts</div>
-                  {getPaymentStatusBadge(item)}
+               
+                  
+                  { getPaymentStatusBadge(item)}
                 </div>
               </div>
             ))}
@@ -643,7 +605,7 @@ console.log(historyData)
                   <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Subject</th>
                   <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Scripts</th>
                   <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Marks Detail</th>
-                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Evaluation Status</th>
+                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Mark Entry Status</th>
                   <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Payment</th>
                 </tr>
               </thead>
