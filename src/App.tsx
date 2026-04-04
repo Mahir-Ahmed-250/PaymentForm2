@@ -380,7 +380,7 @@ console.log(historyData)
     const status = (item.paymentStatus || item.payment || item.payStatus || 'Pending').toString().trim();
     return (
       <div className={status === 'Updated' ? 'badge-paid' : 'badge-pending'}>
-        Payment Status: {status}
+        {status}
       </div>
     );
   };
@@ -570,9 +570,9 @@ console.log(historyData)
                 <div className="text-right">
                  
                   <div className="text-sm font-bold">{Number(item.bvCount) + Number(item.evCount)} Scripts</div>
-               
+                  <div className="text-xs text-muted"><span>    Evaluation Entry: </span> </div>     
                   
-                  { getPaymentStatusBadge(item)}
+               <div className="text-center mt-1">   { getPaymentStatusBadge(item)}</div>
                 </div>
               </div>
             ))}
@@ -660,7 +660,7 @@ console.log(historyData)
               <FileText className="text-white w-6 h-6" />
             </div>
             <div className="text-left">
-              <h1 className="text-2xl font-display font-bold text-slate-900 tracking-tight">ExamScripts Management</h1>
+              <h1 className="text-2xl font-display font-bold text-slate-900 tracking-tight">Exam Scripts Management</h1>
               <p className="text-muted text-xs">Exam Center Scripts Management System</p>
             </div>
           </div>
@@ -948,7 +948,7 @@ console.log(historyData)
                             value={formData.teacherTPIN} 
                             onChange={handleTPINChange} 
                             className="input-pro" 
-                            placeholder="6-digit TPIN"
+                            placeholder="Enter TPIN"
                             required 
                             disabled={formData.isUpdate} 
                           />
@@ -1091,9 +1091,7 @@ console.log(historyData)
                         </button>
                         
                         <div className="grid grid-cols-1 gap-3">
-                          <button type="button" className="btn-outline-pro py-3 text-danger hover:bg-danger/5 hover:text-danger hover:border-danger/20" onClick={() => window.location.reload()}>
-                            {formData.isUpdate ? 'Cancel Update' : 'Reset Form'}
-                          </button>
+                         
                         </div>
                       </div>
                   </form>
@@ -1104,7 +1102,7 @@ console.log(historyData)
         </main>
 
         <footer className="mt-12 text-center text-slate-400 text-sm font-medium">
-          <p>© 2026 ExamScripts Management • Queries: 01329681885,79</p>
+          <p>© 2026 Exam Scripts Management • Queries: 01329681885,79</p>
            <p>Any kind of complaint or suggestion: 01713236951 || Mahabub Alam || Dyp Manager (ESM)</p>
         </footer>
       </div>
