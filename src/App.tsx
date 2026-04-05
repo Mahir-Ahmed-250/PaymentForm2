@@ -55,11 +55,10 @@ const SUBJECTS = [
 ];
 
 function App() {
-  
   const [pin, setPin] = useState('');
   const [availableBranches, setAvailableBranches] = useState([]);
   const [activeBranch, setActiveBranch] = useState(null);
-  const [currentView, setCurrentView] = useState('form'); // 'form', 'history', 'dashboard', 'reports'
+  const [currentView, setCurrentView] = useState('form'); // 'form', 'history', 'dashboard', 'reports', 'essential'
   const [historyData, setHistoryData] = useState([]);
   const [subjectFilter, setSubjectFilter] = useState('All'); 
   const [showNotifications, setShowNotifications] = useState(false);
@@ -186,6 +185,7 @@ function App() {
     }
   };
 
+  // Auto-fetch data for dashboard when active branch changes
   useEffect(() => {
     if (activeBranch) {
       fetchHistory(true);
@@ -196,6 +196,7 @@ function App() {
     const totalScripts = historyData.reduce((acc, curr) => acc + (Number(curr.bvCount) + Number(curr.evCount)), 0);
     const totalExaminers = new Set(historyData.map(h => h.tpin)).size;
     
+    // Payment Status Stats (Directly from historyData)
     const pendingPayments = historyData.filter(h => {
       const status = (h.paymentStatus || h.payment || h.payStatus || 'Pending').toString().trim();
       return status === 'Pending';
@@ -205,31 +206,34 @@ function App() {
       return status === 'Updated';
     }).length;
     
-    let markPending = 0;
-    let markWrong = 0;
-    let markUpdated = 0;
+    // Evaluation Entry Status Stats (Aggregate from all records)
+    let evalPending = 0;
+    let evalWrong = 0;
+    let evalUpdated = 0;
     const wrongRecords = [];
 
     historyData.forEach(record => {
+      // Evaluation Status from API if available, otherwise calculate from allMarks
       const apiEvalStatus = record.evaluationStatus || record.status || record.markStatus;
       
       let hasWrongMark = false;
       if (apiEvalStatus) {
         const s = apiEvalStatus.toString().trim();
-        if (s === 'Pending') markPending++;
+        if (s === 'Pending') evalPending++;
         else if (s === 'Wrong') {
-          markWrong++;
+          evalWrong++;
           hasWrongMark = true;
         }
-        else if (s === 'Updated') markUpdated++;
+        else if (s === 'Updated') evalUpdated++;
       } else {
+        // Fallback to calculating from allMarks
         record.allMarks?.forEach(mark => {
-          if (mark.status === 'Pending') markPending++;
+          if (mark.status === 'Pending') evalPending++;
           else if (mark.status === 'Wrong') {
-            markWrong++;
+            evalWrong++;
             hasWrongMark = true;
           }
-          else if (mark.status === 'Updated') markUpdated++;
+          else if (mark.status === 'Updated') evalUpdated++;
         });
       }
       
@@ -248,9 +252,9 @@ function App() {
       totalExaminers, 
       pendingPayments, 
       updatedPayments, 
-      markPending, 
-      markWrong, 
-      markUpdated, 
+      evalPending, 
+      evalWrong, 
+      evalUpdated, 
       wrongRecords,
       subjectData 
     };
@@ -396,7 +400,7 @@ function App() {
     if (apiStatus) {
       const s = apiStatus.toString().trim();
       if (s === 'Wrong') return <span className="badge-danger">Wrong</span>;
-      if (s === 'Pending') return <span className="badge-danger">Pending</span>;
+      if (s === 'Pending') return <span className="badge-warning">Pending</span>;
       if (s === 'Updated') return <span className="badge-paid">Updated</span>;
     }
 
@@ -502,26 +506,32 @@ function App() {
 
         {/* Status Breakdown Sections */}
         <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+          {/* Evaluation Entry Status */}
           <div className="card-pro p-6">
             <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-              <Edit3 className="w-5 h-5 text-brand" /> Marks Entry Status
+              <Edit3 className="w-5 h-5 text-brand" /> Evaluation Entry Status
             </h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 rounded-2xl bg-warning/5 border border-warning/10">
-                
-                <div className="text-2xl font-bold text-warning">{dashboardStats.markPending}</div>
+                <div className="text-2xl font-bold text-warning">{dashboardStats.evalPending}</div>
                 <div className="text-xs text-muted font-bold uppercase mt-1">Pending</div>
               </div>
               <div className="text-center p-4 rounded-2xl bg-danger/5 border border-danger/10">
-                <div className="text-2xl font-bold text-danger">{dashboardStats.markWrong}</div>
+                <div className="text-2xl font-bold text-danger">{dashboardStats.evalWrong}</div>
                 <div className="text-xs text-muted font-bold uppercase mt-1">Wrong</div>
               </div>
               <div className="text-center p-4 rounded-2xl bg-success/5 border border-success/10">
-                <div className="text-2xl font-bold text-success">{dashboardStats.markUpdated}</div>
+                <div className="text-2xl font-bold text-success">{dashboardStats.evalUpdated}</div>
                 <div className="text-xs text-muted font-bold uppercase mt-1">Updated</div>
               </div>
             </div>
           </div>
+
+          {/* Payment Entry Status */}
+         
+              
+           
+          
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -554,9 +564,9 @@ function App() {
                 <PieChart>
                   <Pie
                     data={[
-                      { name: 'Updated', value: dashboardStats.markUpdated },
-                      { name: 'Pending', value: dashboardStats.markPending },
-                      { name: 'Wrong', value: dashboardStats.markWrong }
+                      { name: 'Updated', value: dashboardStats.evalUpdated },
+                      { name: 'Pending', value: dashboardStats.evalPending },
+                      { name: 'Wrong', value: dashboardStats.evalWrong }
                     ]}
                     cx="50%"
                     cy="50%"
@@ -576,6 +586,7 @@ function App() {
             </div>
           </div>
         </div>
+
 
         <div className="card-pro p-6">
           <div className="flex items-center justify-between mb-6">
@@ -613,37 +624,82 @@ function App() {
     );
   };
 
- const renderReports = () => {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Evaluation Reports</h2>
-          <p className="text-muted text-sm">Detailed breakdown of all evaluations</p>
-        </div>
-        <button className="btn-outline-pro py-2 text-sm">
-          <Download className="w-4 h-4" /> Export CSV
-        </button>
-      </div>
+  const renderEssentialFiles = () => {
+    const files = [
+      {
+        name: "Scripts Register Book",
+        url: "https://docs.google.com/spreadsheets/d/1unJMJxOEXh5dpE0G0CXkCqxuzG4m49vP/export?format=xlsx",
+        description: "Download the Scripts Register Book spreadsheet file."
+      },
+      {
+        name: "Mark Sheet Format",
+        url: "https://docs.google.com/spreadsheets/d/1AW2G02T4zDRAiWZA1bJzptg5_Psw2vr3/export?format=xlsx",
+        description: "Download the Mark Sheet Format spreadsheet file."
+      }
+    ];
 
-      <div className="card-pro overflow-hidden">
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Examiner</th>
-                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Subject</th>
-                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Scripts</th>
-                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Marks Detail</th>
-                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Mark Entry Status</th>
-                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Payment</th>
-              </tr>
-            </thead>
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold">Essential Files</h2>
+          <p className="text-muted text-sm">Download important documents and templates</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {files.map((file, i) => (
+            <div key={i} className="card-pro p-6 flex flex-col justify-between">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="w-12 h-12 bg-brand/10 rounded-2xl flex items-center justify-center text-brand shrink-0">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900">{file.name}</h3>
+                  <p className="text-sm text-muted mt-1">{file.description}</p>
+                </div>
+              </div>
+              <a 
+                href={file.url} 
+                className="btn-primary-pro w-full py-3 flex items-center justify-center gap-2"
+                download
+              >
+                <Download className="w-4 h-4" /> Download File
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderReports = () => {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Evaluation Reports</h2>
+            <p className="text-muted text-sm">Detailed breakdown of all evaluations</p>
+          </div>
+         
+        </div>
+
+        <div className="card-pro overflow-hidden">
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Examiner</th>
+                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Subject</th>
+                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Scripts</th>
+                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Marks Detail</th>
+                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Evaluation Status</th>
+                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Payment</th>
+                </tr>
+              </thead>
             <tbody className="divide-y divide-slate-100">
               {/* Added sorting logic here */}
               {[...historyData]
-                .sort((a, b) => new Date(b.entryDate) - new Date(a.entryDate))
+                .sort((a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime())
                 .map((item, i) => (
                 <tr key={i} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-slate-600 font-medium">{item.entryDate}</td>
@@ -714,12 +770,12 @@ function App() {
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
@@ -727,7 +783,7 @@ function App() {
         {/* Header */}
         <header className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="inline-flex items-center justify-center w-12 h-12rounded-2xl shadow-lg shadow-brand/20">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl ">
             <img src="https://online.udvash-unmesh.com/Content/UmsTheme/assets/img/udvash-unmesh.png" alt="" />
             </div>
             <div className="text-left">
@@ -857,6 +913,12 @@ function App() {
             >
               <FileText className="w-4 h-4" /> Reports
             </button>
+            <button 
+              onClick={() => setCurrentView('essential')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${currentView === 'essential' ? 'bg-brand text-white shadow-lg shadow-brand/20' : 'text-slate-500 hover:bg-slate-50'}`}
+            >
+              <Download className="w-4 h-4" /> Essential Files
+            </button>
           </nav>
         )}
 
@@ -870,7 +932,10 @@ function App() {
               </div>
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {activeBranch.name}</span>
-                <button onClick={() => window.location.reload()} className="hover:underline flex items-center gap-1 text-slate-500"><LogOut className="w-3.5 h-3.5" /> Change</button>
+                <button onClick={() => setActiveBranch(null)} className="w-30 h-10 bg-slate-100 text-slate-500 rounded-xl flex items-center justify-center hover:bg-slate-200 transition-all" title="Change Branch">
+         
+         Change Branch
+              </button>
               </div>
             </div>
           )}
@@ -888,7 +953,7 @@ function App() {
                 >
                   <div className="text-center mb-8">
                     <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    👤
+                     👤
                     </div>
                     <h2 className="text-xl font-bold">Authentication Required</h2>
                     <p className="text-muted text-sm mt-1">Please enter your branch PIN to continue</p>
@@ -899,7 +964,7 @@ function App() {
                       value={pin} 
                       onChange={(e) => setPin(e.target.value)} 
                       placeholder="Enter Your PIN" 
-                      className="input-pro text-center text-xl  font-display" 
+                      className="input-pro text-center text-2xl  font-display" 
                       required 
                     />
                     <button type="submit" className="btn-primary-pro w-full py-3 text-lg" disabled={loading}>
@@ -985,7 +1050,7 @@ function App() {
                           <div className="text-right">
                             <div className="font-semibold text-brand text-sm">{item.teacherName}</div>
                             <div className="flex items-center justify-end gap-2 mt-1">
-                              <div className="text-xs text-muted"><span>Evaluation Entry: </span></div> {getPaymentStatusBadge(item)}
+                              {getPaymentStatusBadge(item)}
                               <div className="text-xs text-muted">TPIN: {item.tpin}</div>
                             </div>
                           </div>
@@ -1050,6 +1115,18 @@ function App() {
                   exit={{ opacity: 0, y: -20 }}
                 >
                   {renderReports()}
+                </motion.div>
+              )}
+
+              {/* Essential Files View */}
+              {activeBranch && currentView === 'essential' && (
+                <motion.div
+                  key="essential"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                >
+                  {renderEssentialFiles()}
                 </motion.div>
               )}
 
@@ -1145,7 +1222,7 @@ function App() {
                         <div className={`p-3 rounded-xl flex items-center justify-between ${formData.isUpdate ? 'bg-warning/10 text-warning border border-warning/20' : 'bg-slate-100 text-slate-700 border border-slate-200'}`}>
                           <span className="font-bold flex items-center gap-2">
                             {formData.isUpdate ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                            {formData.isUpdate ? "Correct Errors" : "Marks Entry"}
+                            {formData.isUpdate ? "Correct Errors" : "Evaluation Entry"}
                           </span>
                           <span className="text-xs font-bold px-2 py-1 bg-white rounded-lg shadow-sm">Total: {marksRows.length}</span>
                         </div>
