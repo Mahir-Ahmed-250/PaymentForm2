@@ -55,6 +55,7 @@ const SUBJECTS = [
 ];
 
 function App() {
+  
   const [pin, setPin] = useState('');
   const [availableBranches, setAvailableBranches] = useState([]);
   const [activeBranch, setActiveBranch] = useState(null);
@@ -395,7 +396,7 @@ function App() {
     if (apiStatus) {
       const s = apiStatus.toString().trim();
       if (s === 'Wrong') return <span className="badge-danger">Wrong</span>;
-      if (s === 'Pending') return <span className="badge-warning">Pending</span>;
+      if (s === 'Pending') return <span className="badge-danger">Pending</span>;
       if (s === 'Updated') return <span className="badge-paid">Updated</span>;
     }
 
@@ -507,6 +508,7 @@ function App() {
             </h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 rounded-2xl bg-warning/5 border border-warning/10">
+                
                 <div className="text-2xl font-bold text-warning">{dashboardStats.markPending}</div>
                 <div className="text-xs text-muted font-bold uppercase mt-1">Pending</div>
               </div>
@@ -611,73 +613,113 @@ function App() {
     );
   };
 
-  const renderReports = () => {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Evaluation Reports</h2>
-            <p className="text-muted text-sm">Detailed breakdown of all evaluations</p>
-          </div>
-          <button className="btn-outline-pro py-2 text-sm">
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+ const renderReports = () => {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Evaluation Reports</h2>
+          <p className="text-muted text-sm">Detailed breakdown of all evaluations</p>
         </div>
+        <button className="btn-outline-pro py-2 text-sm">
+          <Download className="w-4 h-4" /> Export CSV
+        </button>
+      </div>
 
-        <div className="card-pro overflow-hidden">
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Examiner</th>
-                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Subject</th>
-                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Scripts</th>
-                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Marks Detail</th>
-                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Mark Entry Status</th>
-                  <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Payment</th>
+      <div className="card-pro overflow-hidden">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Examiner</th>
+                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Subject</th>
+                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Scripts</th>
+                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Marks Detail</th>
+                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Mark Entry Status</th>
+                <th className="px-6 py-4 font-bold text-slate-500 uppercase tracking-wider">Payment</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {/* Added sorting logic here */}
+              {[...historyData]
+                .sort((a, b) => new Date(b.entryDate) - new Date(a.entryDate))
+                .map((item, i) => (
+                <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-slate-600 font-medium">{item.entryDate}</td>
+                  <td className="px-6 py-4">
+                    <div className="font-bold text-slate-900">{item.teacherName}</div>
+                    <div className="text-xs text-muted">TPIN: {item.tpin}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="px-2 py-1 rounded-lg bg-brand/5 text-brand text-xs font-bold">{item.subject}</span>
+                  </td>
+                  <td className="px-6 py-4 font-bold text-slate-700">{Number(item.bvCount) + Number(item.evCount)}</td>
+                  <td className="px-6 py-4">
+                    <div className="max-w-[200px] flex flex-wrap gap-1">
+                      {item.allMarks?.map((m, idx) => (          
+                        <span key={idx} className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
+                          m.status === 'Wrong' ? 'bg-danger/5 border-danger/20 text-danger' : 
+                          m.status === 'Updated' ? 'bg-success/5 border-success/20 text-success' : 
+                          /* Updated pending colour here to warning */
+                          'bg-warning/5 border-warning/20 text-warning'
+                        }`}>
+                          Reg: {m.reg} Mark: {m.marks}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-1.5">
+                      {/* Counter Summary */}
+                      {item.allMarks?.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const counts = {
+                              wrong: item.allMarks.filter(m => m.status === 'Wrong').length,
+                              updated: item.allMarks.filter(m => m.status === 'Updated').length,
+                              pending: item.allMarks.filter(m => m.status !== 'Wrong' && m.status !== 'Updated').length
+                            };
+
+                            return (
+                              <div className="gap-2">
+                                {counts.wrong > 0 && (
+                                  <span className="flex items-center gap-1 text-[10px] font-bold text-danger">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-danger"></span>
+                                    {counts.wrong} Wrong
+                                  </span>
+                                )}
+                                {counts.updated > 0 && (
+                                  <span className="flex items-center gap-1 text-[10px] font-bold text-success">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
+                                    {counts.updated} Updated
+                                  </span>
+                                )}
+                                {counts.pending > 0 && (
+                                  <span className="flex items-center gap-1 text-[10px] font-bold text-warning">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-warning"></span>
+                                    {counts.pending} Pending
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    {getPaymentStatusBadge(item)}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {historyData.map((item, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-slate-600 font-medium">{item.entryDate}</td>
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900">{item.teacherName}</div>
-                      <div className="text-xs text-muted">TPIN: {item.tpin}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 rounded-lg bg-brand/5 text-brand text-xs font-bold">{item.subject}</span>
-                    </td>
-                    <td className="px-6 py-4 font-bold text-slate-700">{Number(item.bvCount) + Number(item.evCount)}</td>
-                    <td className="px-6 py-4">
-                      <div className="max-w-[200px] flex flex-wrap gap-1">
-                        {item.allMarks?.map((m, idx) => (
-                          <span key={idx} className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
-                            m.status === 'Wrong' ? 'bg-danger/5 border-danger/20 text-danger' : 
-                            m.status === 'Updated' ? 'bg-success/5 border-success/20 text-success' : 
-                            'bg-slate-50 border-slate-200 text-slate-500'
-                          }`}>
-                            Reg: {m.reg} Mark: {m.marks}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getEvaluationStatusBadge(item)}
-                    </td>
-                    <td className="px-6 py-4">
-                      {getPaymentStatusBadge(item)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
