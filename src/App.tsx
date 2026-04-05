@@ -888,7 +888,7 @@ function App() {
                 >
                   <div className="text-center mb-8">
                     <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Hash className="text-slate-500 w-6 h-6" />
+                    👤
                     </div>
                     <h2 className="text-xl font-bold">Authentication Required</h2>
                     <p className="text-muted text-sm mt-1">Please enter your branch PIN to continue</p>
