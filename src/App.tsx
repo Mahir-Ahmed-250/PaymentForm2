@@ -861,7 +861,7 @@ function App() {
                       required 
                     />
                     <button type="submit" className="btn-primary-pro w-full py-3 text-lg" disabled={loading}>
-                      {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Verify Access"}
+                      {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Confirm Identity"}
                     </button>
                   </form>
                 </motion.div>
