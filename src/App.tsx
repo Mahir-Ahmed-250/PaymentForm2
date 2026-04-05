@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import Swal from 'sweetalert2';
 import { 
@@ -27,7 +27,8 @@ import {
   Download,
   MoreVertical,
   Bell,
-  CreditCard
+  CreditCard,
+  X
 } from 'lucide-react';
 import {
   BarChart,
@@ -40,7 +41,6 @@ import {
   PieChart,
   Pie,
   Cell,
-
   Legend
 } from 'recharts';
 
@@ -61,6 +61,8 @@ function App() {
   const [currentView, setCurrentView] = useState('form'); // 'form', 'history', 'dashboard', 'reports'
   const [historyData, setHistoryData] = useState([]);
   const [subjectFilter, setSubjectFilter] = useState('All'); 
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef(null);
   
   const [formData, setFormData] = useState({ 
     teacherTPIN: '', 
@@ -72,6 +74,10 @@ function App() {
     isUpdate: false,
     rowId: null
   });
+
+  // For tracking changes during update
+  const [originalFormData, setOriginalFormData] = useState(null);
+  const [originalMarksRows, setOriginalMarksRows] = useState(null);
 
   const [teacherName, setTeacherName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -95,6 +101,17 @@ function App() {
       setMarksRows([]);
     }
   }, [formData.bvCount, formData.evCount, formData.singleCount, formData.subject, isLanguageSubject, formData.isUpdate]);
+
+  // Close notification dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleBranchVerify = async (e) => {
     e.preventDefault();
@@ -158,13 +175,7 @@ function App() {
       });
       const data = await res.json();
       if (data.status === "success") {
-        console.log("Fetched History Records:", data.records);
-        if (data.records.length > 0) {
-          console.log("Sample Record Keys:", Object.keys(data.records[0]));
-          console.log("Sample Record Data:", data.records[0]);
-        }
         setHistoryData(data.records);
-        
         if (!silent) setCurrentView('history');
       }
     } catch (err) {
@@ -174,18 +185,16 @@ function App() {
     }
   };
 
-  // Auto-fetch data for dashboard when active branch changes
   useEffect(() => {
     if (activeBranch) {
       fetchHistory(true);
     }
   }, [activeBranch]);
-console.log(historyData)
+
   const dashboardStats = useMemo(() => {
     const totalScripts = historyData.reduce((acc, curr) => acc + (Number(curr.bvCount) + Number(curr.evCount)), 0);
     const totalExaminers = new Set(historyData.map(h => h.tpin)).size;
     
-    // Payment Status Stats (Directly from historyData)
     const pendingPayments = historyData.filter(h => {
       const status = (h.paymentStatus || h.payment || h.payStatus || 'Pending').toString().trim();
       return status === 'Pending';
@@ -195,14 +204,12 @@ console.log(historyData)
       return status === 'Updated';
     }).length;
     
-    // Evaluation Entry Status Stats (Aggregate from all records)
     let markPending = 0;
     let markWrong = 0;
     let markUpdated = 0;
     const wrongRecords = [];
 
     historyData.forEach(record => {
-      // Evaluation Status from API if available, otherwise calculate from allMarks
       const apiEvalStatus = record.evaluationStatus || record.status || record.markStatus;
       
       let hasWrongMark = false;
@@ -215,7 +222,6 @@ console.log(historyData)
         }
         else if (s === 'Updated') markUpdated++;
       } else {
-        // Fallback to calculating from allMarks
         record.allMarks?.forEach(mark => {
           if (mark.status === 'Pending') markPending++;
           else if (mark.status === 'Wrong') {
@@ -250,7 +256,7 @@ console.log(historyData)
   }, [historyData]);
 
   const handleEditWrongEntry = (record) => {
-    setFormData({
+    const newFormData = {
       ...formData,
       teacherTPIN: record.tpin,
       subject: record.subject,
@@ -259,10 +265,17 @@ console.log(historyData)
       singleCount: Number(record.bvCount) + Number(record.evCount),
       isUpdate: true,
       rowId: record.rowId
-    });
+    };
+    const newMarksRows = record.allMarks.map(m => ({ roll: m.reg, marks: m.marks, status: m.status }));
+    
+    setFormData(newFormData);
+    setOriginalFormData(JSON.parse(JSON.stringify(newFormData))); // Deep copy
+    setMarksRows(newMarksRows);
+    setOriginalMarksRows(JSON.parse(JSON.stringify(newMarksRows))); // Deep copy
+    
     setTeacherName(record.teacherName);
-    setMarksRows(record.allMarks.map(m => ({ roll: m.reg, marks: m.marks, status: m.status })));
     setCurrentView('form');
+    setShowNotifications(false);
     Swal.fire({ title: 'এডিট মোড', text: 'আপনি এখন তথ্য সংশোধন করছেন।', icon: 'info', timer: 1500, showConfirmButton: false, customClass: { popup: 'rounded-3xl' } });
   };
 
@@ -272,6 +285,21 @@ console.log(historyData)
     if (!teacherName || teacherName.includes('সঠিক')) {
       Swal.fire({ icon: 'warning', title: 'সতর্কতা!', text: 'সঠিক TPIN নিশ্চিত করুন।', customClass: { popup: 'rounded-3xl' } });
       return;
+    }
+
+    // Check if any changes were made in update mode
+    if (formData.isUpdate) {
+      const hasChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData) || 
+                         JSON.stringify(marksRows) !== JSON.stringify(originalMarksRows);
+      if (!hasChanged) {
+        Swal.fire({ 
+          icon: 'info', 
+          title: 'কোন পরিবর্তন নেই!', 
+          text: 'তথ্য আপডেট করতে অন্তত একটি ফিল্ড পরিবর্তন করুন।', 
+          customClass: { popup: 'rounded-3xl' } 
+        });
+        return;
+      }
     }
 
     for (let i = 0; i < marksRows.length; i++) {
@@ -349,6 +377,8 @@ console.log(historyData)
             });
             setTeacherName('');
             setMarksRows([{ roll: '', marks: '', status: 'Pending' }]);
+            setOriginalFormData(null);
+            setOriginalMarksRows(null);
             fetchHistory(true);
             setCurrentView('dashboard');
           });
@@ -386,7 +416,10 @@ console.log(historyData)
   };
 
   const renderDashboard = () => {
-    const COLORS = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+    // Sort recent activities by teacher name as requested
+    const sortedRecent = [...historyData]
+      .sort((a, b) => a.teacherName.localeCompare(b.teacherName))
+      .slice(0, 5);
 
     return (
       <div className="space-y-6">
@@ -468,7 +501,6 @@ console.log(historyData)
 
         {/* Status Breakdown Sections */}
         <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-          {/* Evaluation Entry Status */}
           <div className="card-pro p-6">
             <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
               <Edit3 className="w-5 h-5 text-brand" /> Marks Entry Status
@@ -488,9 +520,6 @@ console.log(historyData)
               </div>
             </div>
           </div>
-
-          {/* Payment Entry Status */}
-      
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -546,21 +575,23 @@ console.log(historyData)
           </div>
         </div>
 
-      
-
         <div className="card-pro p-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold flex items-center gap-2">
-              <History className="w-5 h-5 text-brand" /> Recent Activity
+              <History className="w-5 h-5 text-brand" /> Recent Activity 
             </h3>
             <button onClick={() => setCurrentView('history')} className="text-brand text-sm font-bold hover:underline">View All</button>
           </div>
           <div className="space-y-4">
-            {historyData.slice(0, 5).map((item, i) => (
+         
+
+            {sortedRecent.map((item, i ) =>  (
+              
               <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-brand font-bold">
-                    {item.subject[0]}
+                    {item.teacherName[0]}
+                    
                   </div>
                   <div>
                     <div className="font-bold text-sm">{item.teacherName}</div>
@@ -568,11 +599,9 @@ console.log(historyData)
                   </div>
                 </div>
                 <div className="text-right">
-                 
                   <div className="text-sm font-bold">{Number(item.bvCount) + Number(item.evCount)} Scripts</div>
-                  <div className="text-xs text-muted"><span>    Evaluation Entry: </span> </div>     
-                  
-               <div className="text-center mt-1">   { getPaymentStatusBadge(item)}</div>
+                  <div className="text-xs text-muted"><span>Evaluation Entry: </span></div>     
+                  <div className="text-center mt-1">{getPaymentStatusBadge(item)}</div>
                 </div>
               </div>
             ))}
@@ -667,9 +696,9 @@ console.log(historyData)
 
           {activeBranch && (
             <div className="flex items-center gap-3">
-              <div className="relative">
+              <div className="relative" ref={notificationRef}>
                 <button 
-                  onClick={() => setCurrentView('dashboard')}
+                  onClick={() => setShowNotifications(!showNotifications)}
                   className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${dashboardStats.wrongRecords.length > 0 ? 'bg-danger/10 text-danger' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                 >
                   <Bell className="w-5 h-5" />
@@ -679,6 +708,70 @@ console.log(historyData)
                     </span>
                   )}
                 </button>
+
+                {/* Notification Dropdown */}
+                <AnimatePresence>
+                  {showNotifications && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden"
+                    >
+                      <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <h4 className="font-bold text-slate-900">Notifications</h4>
+                        <button onClick={() => setShowNotifications(false)} className="text-slate-400 hover:text-slate-600">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto custom-scrollbar">
+                        {dashboardStats.wrongRecords.length > 0 ? (
+                          <div className="divide-y divide-slate-100">
+                            {dashboardStats.wrongRecords.map((rec, i) => (
+                              <button
+                                key={i}
+                                onClick={() => handleEditWrongEntry(rec)}
+                                className="w-full p-4 text-left hover:bg-slate-50 transition-colors flex items-start gap-3 group"
+                              >
+                                <div className="w-8 h-8 bg-danger/10 rounded-lg flex items-center justify-center text-danger shrink-0">
+                                  <AlertCircle className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-bold text-slate-900 group-hover:text-brand transition-colors">
+                                    {rec.teacherName}
+                                  </div>
+                                  <div className="text-xs text-muted mt-0.5">
+                                    Wrong marks in {rec.subject}
+                                  </div>
+                                  <div className="text-[10px] font-bold text-danger mt-1 uppercase tracking-wider">
+                                    Click to correct
+                                  </div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-8 text-center">
+                            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                              <CheckCircle2 className="text-slate-300 w-6 h-6" />
+                            </div>
+                            <p className="text-sm text-slate-500 font-medium">No new notifications</p>
+                          </div>
+                        )}
+                      </div>
+                      {dashboardStats.wrongRecords.length > 0 && (
+                        <div className="p-3 bg-slate-50/50 border-t border-slate-100 text-center">
+                          <button 
+                            onClick={() => { setCurrentView('dashboard'); setShowNotifications(false); }}
+                            className="text-xs font-bold text-brand hover:underline"
+                          >
+                            View Dashboard Stats
+                          </button>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
               
               <div className="hidden md:flex flex-col items-start">
@@ -850,7 +943,7 @@ console.log(historyData)
                           <div className="text-right">
                             <div className="font-semibold text-brand text-sm">{item.teacherName}</div>
                             <div className="flex items-center justify-end gap-2 mt-1">
-                    <div className="text-xs text-muted"><span>    Evaluation Entry: </span> </div>     {getPaymentStatusBadge(item)}
+                              <div className="text-xs text-muted"><span>Evaluation Entry: </span></div> {getPaymentStatusBadge(item)}
                               <div className="text-xs text-muted">TPIN: {item.tpin}</div>
                             </div>
                           </div>
@@ -1076,24 +1169,20 @@ console.log(historyData)
                       <input type="date" value={formData.entryDate} onChange={(e) => setFormData({...formData, entryDate: e.target.value})} className="input-pro" required disabled={formData.isUpdate} />
                     </div>
 
-                      <div className="pt-4 space-y-3">
-                        <button 
-                          type="submit" 
-                          className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all ${formData.isUpdate ? 'bg-warning text-white shadow-warning/20' : 'btn-primary-pro shadow-brand/20'}`} 
-                          disabled={loading || verifying || !teacherName || teacherName.includes('সঠিক')}
-                        >
-                          {loading ? <RefreshCw className="w-6 h-6 animate-spin mx-auto" /> : (
-                            <span className="flex items-center justify-center gap-2">
-                              {formData.isUpdate ? <Save className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
-                              {formData.isUpdate ? 'Update Records' : 'Submit Evaluation'}
-                            </span>
-                          )}
-                        </button>
-                        
-                        <div className="grid grid-cols-1 gap-3">
-                         
-                        </div>
-                      </div>
+                    <div className="pt-4 space-y-3">
+                      <button 
+                        type="submit" 
+                        className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all ${formData.isUpdate ? 'bg-warning text-white shadow-warning/20' : 'btn-primary-pro shadow-brand/20'}`} 
+                        disabled={loading || verifying || !teacherName || teacherName.includes('সঠিক')}
+                      >
+                        {loading ? <RefreshCw className="w-6 h-6 animate-spin mx-auto" /> : (
+                          <span className="flex items-center justify-center gap-2">
+                            {formData.isUpdate ? <Save className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+                            {formData.isUpdate ? 'Update Records' : 'Submit Evaluation'}
+                          </span>
+                        )}
+                      </button>
+                    </div>
                   </form>
                 </motion.div>
               )}
@@ -1103,7 +1192,7 @@ console.log(historyData)
 
         <footer className="mt-12 text-center text-slate-400 text-sm font-medium">
           <p>© 2026 Exam Scripts Management • Queries: 01329681885,79</p>
-           <p>Any kind of complaint or suggestion: 01713236951 || Mahabub Alam || Dyp Manager (ESM)</p>
+          <p>Any kind of complaint or suggestion: 01713236951 || Mahabub Alam || Dyp Manager (ESM)</p>
         </footer>
       </div>
     </div>
