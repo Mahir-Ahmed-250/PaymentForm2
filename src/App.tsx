@@ -727,8 +727,8 @@ function App() {
         {/* Header */}
         <header className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-brand rounded-2xl shadow-lg shadow-brand/20">
-              <FileText className="text-white w-6 h-6" />
+            <div className="inline-flex items-center justify-center w-12 h-12rounded-2xl shadow-lg shadow-brand/20">
+            <img src="https://online.udvash-unmesh.com/Content/UmsTheme/assets/img/udvash-unmesh.png" alt="" />
             </div>
             <div className="text-left">
               <h1 className="text-2xl font-display font-bold text-slate-900 tracking-tight">Exam Scripts Management</h1>
