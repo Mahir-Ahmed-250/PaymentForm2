@@ -509,7 +509,7 @@ function App() {
           {/* Evaluation Entry Status */}
           <div className="card-pro p-6">
             <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-              <Edit3 className="w-5 h-5 text-brand" /> Evaluation Entry Status
+              <Edit3 className="w-5 h-5 text-brand" /> Marks Entry Status
             </h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 rounded-2xl bg-warning/5 border border-warning/10">
@@ -557,7 +557,7 @@ function App() {
 
           <div className="card-pro p-6">
             <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-              <PieChartIcon className="w-5 h-5 text-brand" /> Evaluation Entry Progress
+              <PieChartIcon className="w-5 h-5 text-brand" /> Marks Entry Progress
             </h3>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
