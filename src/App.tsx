@@ -628,12 +628,12 @@ function App() {
     const files = [
       {
         name: "Scripts Register Book",
-        url: "https://docs.google.com/spreadsheets/d/1unJMJxOEXh5dpE0G0CXkCqxuzG4m49vP/export?format=xlsx",
+        url: "https://drive.google.com/uc?export=download&id=19NkuVChZ0bAcYG0G9SLOBcQVjDQNU545",
         description: "Download the Scripts Register Book spreadsheet file."
       },
       {
         name: "Mark Sheet Format",
-        url: "https://docs.google.com/spreadsheets/d/1AW2G02T4zDRAiWZA1bJzptg5_Psw2vr3/export?format=xlsx",
+        url: "https://drive.google.com/uc?export=download&id=1-rCT-sJqsbYrCmy1EngykimWSE5GzQoT",
         description: "Download the Mark Sheet Format spreadsheet file."
       }
     ];
