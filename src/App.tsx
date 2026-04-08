@@ -728,40 +728,53 @@ function App() {
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-1.5">
                       {/* Counter Summary */}
-                      {item.allMarks?.length > 0 && (
-                        <div className="flex items-center gap-2">
-                          {(() => {
-                            const counts = {
-                              wrong: item.allMarks.filter(m => m.status === 'Wrong').length,
-                              updated: item.allMarks.filter(m => m.status === 'Updated').length,
-                              pending: item.allMarks.filter(m => m.status !== 'Wrong' && m.status !== 'Updated').length
-                            };
+                     {item.allMarks?.length > 0 && (
+  <div className="flex items-center gap-2">
+    {(() => {
+      const counts = {
+        wrong: item.allMarks.filter(m => m.status === 'Wrong').length,
+        updated: item.allMarks.filter(m => m.status === 'Updated').length,
+        notAdmitted: item.allMarks.filter(m => m.status === 'Not Admitted').length,
+       
+        pending: item.allMarks.filter(
+          m => m.status !== 'Wrong' && 
+               m.status !== 'Updated' && 
+               m.status !== 'Not Admitted'
+        ).length,
+      };
 
-                            return (
-                              <div className="gap-2">
-                                {counts.wrong > 0 && (
-                                  <span className="flex items-center gap-1 text-[10px] font-bold text-danger">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-danger"></span>
-                                    {counts.wrong} Wrong
-                                  </span>
-                                )}
-                                {counts.updated > 0 && (
-                                  <span className="flex items-center gap-1 text-[10px] font-bold text-success">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
-                                    {counts.updated} Updated
-                                  </span>
-                                )}
-                                {counts.pending > 0 && (
-                                  <span className="flex items-center gap-1 text-[10px] font-bold text-warning">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-warning"></span>
-                                    {counts.pending} Pending
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )}
+      return (
+        <div className="flex gap-2"> {/* flex add kora hoyeche item gulo pasapasi thakar jonno */}
+          {counts.wrong > 0 && (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-danger">
+              <span className="w-1.5 h-1.5 rounded-full bg-danger"></span>
+              {counts.wrong} Wrong
+            </span>
+          )}
+          {counts.updated > 0 && (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-success">
+              <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
+              {counts.updated} Updated
+            </span>
+          )}
+          {/* Not Admitted Section */}
+          {counts.notAdmitted > 0 && (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-gray-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+              {counts.notAdmitted} Not Admitted
+            </span>
+          )}
+          {counts.pending > 0 && (
+            <span className="flex items-center gap-1 text-[10px] font-bold text-warning">
+              <span className="w-1.5 h-1.5 rounded-full bg-warning"></span>
+              {counts.pending} Pending
+            </span>
+          )}
+        </div>
+      );
+    })()}
+  </div>
+)}
                     </div>
                   </td>
                   <td className="px-6 py-4">
