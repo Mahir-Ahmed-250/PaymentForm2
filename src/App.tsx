@@ -44,7 +44,7 @@ import {
   Legend
 } from 'recharts';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzyCxmewKSdvwdJMd3t_6au1G2oFwRJmiB88eADaO5dE4dIlRc3lUuWI2TmDpD83D2p/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1F3InA9wf_U-NUFejQC4MyICJg2eVyyZP2s2wGlajfBIdb3hTPe9VQrUu5jT60nnI/exec';
 
 const SUBJECTS = [
   "বাংলা",
