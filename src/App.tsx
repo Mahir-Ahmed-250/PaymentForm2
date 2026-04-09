@@ -51,6 +51,7 @@ const SUBJECTS = [
   "ইংরেজি",
   "গণিত",
   "বাংলাদেশ ও বিশ্ব-পরিচিতি এবং বিজ্ঞান"
+ 
 ];
 
 function App() {
@@ -533,7 +534,7 @@ function App() {
           
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
           <div className="card-pro p-6">
             <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-brand" /> Subject Distribution
