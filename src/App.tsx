@@ -323,15 +323,15 @@ function App() {
         return;
       }
 
-      if (markStr === "" || isNaN(markNum) || markNum < 0 || markNum > 100) {
-        Swal.fire({ 
-          icon: 'error', 
-          title: 'ভুল মার্কস!', 
-          text: `সিরিয়াল ${i + 1}-এর মার্কস ০ থেকে ১০০-এর মধ্যে হতে হবে।`,
-          customClass: { popup: 'rounded-3xl' }
-        });
-        return;
-      }
+      // if (markStr === "" || isNaN(markNum) || markNum < 0 || markNum > 100) {
+      //   Swal.fire({ 
+      //     icon: 'error', 
+      //     title: 'ভুল মার্কস!', 
+      //     text: `সিরিয়াল ${i + 1}-এর মার্কস ০ থেকে ১০০-এর মধ্যে হতে হবে।`,
+      //     customClass: { popup: 'rounded-3xl' }
+      //   });
+      //   return;
+      // }
     }
 
     let finalMarksRows = [...marksRows];
@@ -1273,7 +1273,7 @@ function App() {
                                       </td>
                                       <td className="px-4 py-2">
                                         <input 
-                                          type="number" 
+                                          // type="number" 
                                           className={`w-full px-3 py-1.5 rounded-lg border outline-none focus:ring-2 transition-all ${isReadOnly ? 'bg-slate-50 border-slate-100 text-slate-400' : 'border-slate-200 focus:ring-brand/10 focus:border-brand'}`}
                                           value={row.marks} 
                                           placeholder="0-100"
